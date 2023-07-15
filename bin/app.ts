@@ -35,10 +35,10 @@ try {
     },
   };
 
-  const redirectCoToComStack = new ImageAnalyzerStack(app, `${appName}RedirectCoToComALB`, props);
+  const imageAnalyzerStack = new ImageAnalyzerStack(app, `${appName}-ImageAnalyzerStack`, props);
 
-  Tags.of(redirectCoToComStack).add("stage", stage);
-  Tags.of(redirectCoToComStack).add("project", project);
+  Tags.of(imageAnalyzerStack).add("stage", stage);
+  Tags.of(imageAnalyzerStack).add("project", project);
 } catch (e) {
   console.error(e);
 }

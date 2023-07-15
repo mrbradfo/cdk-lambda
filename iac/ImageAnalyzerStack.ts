@@ -1,10 +1,15 @@
-import cdk, { StackProps } from "aws-cdk-lib";
-import s3 from "aws-cdk-lib/aws-s3";
-import iam from "aws-cdk-lib/aws-iam";
-import lambda from "aws-cdk-lib/aws-lambda";
-import lambdaEventSource from "aws-cdk-lib/aws-lambda-event-sources";
-import dynamodb from "aws-cdk-lib/aws-dynamodb";
-import { Construct } from "constructs";
+import cdk, {
+  App,
+  CfnOutput,
+  RemovalPolicy,
+  Stack,
+  StackProps,
+  aws_dynamodb,
+  aws_iam,
+  aws_lambda,
+  aws_lambda_event_sources,
+  aws_s3,
+} from "aws-cdk-lib";
 
 const imageBucket = "cdk-rekn-imagebucket";
 
@@ -13,33 +18,33 @@ export interface ImageAnalyzerStackProps extends StackProps {
   prefix: string;
 }
 
-class ImageAnalyzerStack extends cdk.Stack {
+class ImageAnalyzerStack extends Stack {
   /**
    *
-   * @param {Construct} scope
+   * @param {App} scope
    * @param {string} id
-   * @param {cdk.StackProps=} props
+   * @param {StackProps} props
    */
-  constructor(scope: Construct, id: string, props: ImageAnalyzerStackProps) {
+  constructor(scope: App, id: string, props: ImageAnalyzerStackProps) {
     super(scope, id, props);
 
     // ========================================
     // Bucket for storing images
     // ========================================
-    const bucket = new s3.Bucket(this, imageBucket, {
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    const bucket = new aws_s3.Bucket(this, imageBucket, {
+      removalPolicy: RemovalPolicy.DESTROY,
     });
-    new cdk.CfnOutput(this, "Bucket", { value: bucket.bucketName });
+    new CfnOutput(this, "Bucket", { value: bucket.bucketName });
 
     // ========================================
     // Role for AWS Lambda
     // ========================================
-    const role = new iam.Role(this, "cdk-rekn-lambdarole", {
-      assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
+    const role = new aws_iam.Role(this, "cdk-rekn-lambdarole", {
+      assumedBy: new aws_iam.ServicePrincipal("lambda.amazonaws.com"),
     });
     role.addToPolicy(
-      new iam.PolicyStatement({
-        effect: iam.Effect.ALLOW,
+      new aws_iam.PolicyStatement({
+        effect: aws_iam.Effect.ALLOW,
         actions: ["rekognition:*", "logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
         resources: ["*"],
       })
@@ -48,18 +53,18 @@ class ImageAnalyzerStack extends cdk.Stack {
     // ========================================
     // DynamoDB table for storing image labels
     // ========================================
-    const table = new dynamodb.Table(this, "cdk-rekn-imagetable", {
-      partitionKey: { name: "Image", type: dynamodb.AttributeType.STRING },
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    const table = new aws_dynamodb.Table(this, "cdk-rekn-imagetable", {
+      partitionKey: { name: "Image", type: aws_dynamodb.AttributeType.STRING },
+      removalPolicy: RemovalPolicy.DESTROY,
     });
-    new cdk.CfnOutput(this, "Table", { value: table.tableName });
+    new CfnOutput(this, "Table", { value: table.tableName });
 
     // ========================================
     // AWS Lambda function
     // ========================================
-    const lambdaFn = new lambda.Function(this, "cdk-rekn-function", {
-      code: lambda.AssetCode.fromAsset("lambda"),
-      runtime: lambda.Runtime.PYTHON_3_9,
+    const lambdaFn = new aws_lambda.Function(this, "cdk-rekn-function", {
+      code: aws_lambda.AssetCode.fromAsset("lambda"),
+      runtime: aws_lambda.Runtime.PYTHON_3_9,
       handler: "index.handler",
       role: role,
       environment: {
@@ -68,8 +73,8 @@ class ImageAnalyzerStack extends cdk.Stack {
       },
     });
     lambdaFn.addEventSource(
-      new lambdaEventSource.S3EventSource(bucket, {
-        events: [s3.EventType.OBJECT_CREATED],
+      new aws_lambda_event_sources.S3EventSource(bucket, {
+        events: [aws_s3.EventType.OBJECT_CREATED],
       })
     );
 
