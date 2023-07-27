@@ -8,3 +8,4 @@ cdk.context.json
 whois-sampler
 temp*.ts
 code_v2023-04-07
+.DS_Store
